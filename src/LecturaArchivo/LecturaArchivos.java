@@ -9,6 +9,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
 import FrameWork.AppException;
 
 public class LecturaArchivos {
@@ -26,6 +28,9 @@ public class LecturaArchivos {
                     mnLines = Files.readAllLines(Paths.get(nombreArchivo), Charset.forName("UTF-8"));
                     for (String line : mnLines) {
                         String[] values = line.split(";");
+                        if (values[0].toLowerCase().trim().contains("codigo_est")) {
+                            continue;
+                        }
                         telefonoEstudiante.add(values[3]);
                         calificacioneEstudiante.add(values[6]);
                     }
@@ -35,22 +40,83 @@ public class LecturaArchivos {
             }
         }
         System.out.println("Se leyo el archivo con exito.");
-        tratamientoErroresTelefono(telefonoEstudiante);
     }
 
-    private void tratamientoErroresTelefono(List<String> telefonoEstudiante2) {
-        String errorSinRegistro = contarEspaciosBlancos(telefonoEstudiante2);
-        String errorPrivincia = identificarExistenciaProvincia(telefonoEstudiante2);
-        String errorLongitud = identificarLongitudTelefono(telefonoEstudiante2);
+    public void tratamientoErroresCalificaciones() {
+        int errorSinRegistro = contarEspaciosBlancos(calificacioneEstudiante);
+        int errorVerificacioNum = verficarRegistroNumero(calificacioneEstudiante);
+        String notaValid = identificarNotaValida(calificacioneEstudiante);
+        String mensajeError = String
+                .format(" Los errores encontrados en el apartado de califcaciones han sido los siguientes:" + "\n"
+                        + "1. Existen %d reigstros vacíos " + "\n"
+                        + "2. Existen %d teléfonos que no tienen un formato conformado por solo números" + "\n"
+                        + "3. %s", errorSinRegistro, errorVerificacioNum, notaValid);
+        JOptionPane.showMessageDialog(null, mensajeError);
+    }
 
+    private String identificarNotaValida(List<String> calificacioneEstudiante2) {
+        int contadorCalificacionE = 0;
+        for (String calificacion : calificacioneEstudiante2) {
+            if (!(calificacion.equals(""))) {
+                int calificacionInt = Integer.parseInt(calificacion);
+                if (calificacionInt > 20 || calificacionInt < 0) {
+                    contadorCalificacionE++;
+                }
+            }
+        }
+        String errorMensaje = String.format(
+                "La cantidad de calificación que no están en el intervalo de [0-20] son: %d", contadorCalificacionE);
+        return errorMensaje;
+    }
+
+    public void tratamientoErroresTelefono() {
+        int errorSinRegistro = contarEspaciosBlancos(telefonoEstudiante);
+        String errorPrivincia = identificarExistenciaProvincia(telefonoEstudiante);
+        String errorLongitud = identificarLongitudTelefono(telefonoEstudiante);
+        int errorVerificacioNum = verficarRegistroNumero(telefonoEstudiante);
+        String mensajeError = String
+                .format(" Los errores encontrados en el apartado de télefonos han sido los siguientes:" + "\n"
+                        + "1. Existen %d reigstros vacíos " + "\n"
+                        + "2. %s" + "\n"
+                        + "3. Existen %d calificaciones que no tienen un formato conformado por solo números" + "\n"
+                        + "4. %s", errorSinRegistro, errorPrivincia, errorVerificacioNum, errorLongitud);
+        JOptionPane.showMessageDialog(null, mensajeError);
+
+    }
+
+    private int verficarRegistroNumero(List<String> telefonoEstudiante2) {
+        int contadorRegistroStr = 0;
+        for (String Registro : telefonoEstudiante2) {
+            if (!(Registro.equals(""))) {
+                try {
+                    int numeroTransformar = Integer.parseInt(Registro);
+                } catch (NumberFormatException e) {
+                    contadorRegistroStr++;
+                }
+            }
+
+        }
+        return contadorRegistroStr;
     }
 
     private String identificarLongitudTelefono(List<String> telefonoEstudiante2) {
-        return "";
+        int contadorLongitud = 0;
+        for (String telefono : telefonoEstudiante2) {
+            if (!(telefono.equals(""))) {
+                if (telefono.length() != 9) {
+                    contadorLongitud++;
+                }
+            }
+        }
+        String errorEncontrado = String.format(
+                "En el archivo de Excel, la cantidad de teléfonos que no cumplen los 9 dígitos son: %d",
+                contadorLongitud);
+        return errorEncontrado;
     }
 
     private String identificarExistenciaProvincia(List<String> telefonoEstudiante2) {
         int contadorEProvincia = 0;
+        String numero = "";
         for (String telefono : telefonoEstudiante2) {
             if (!(telefono.equals(""))) {
                 char primerDigito = telefono.charAt(0);
@@ -61,20 +127,18 @@ public class LecturaArchivos {
             }
         }
         String errorEncontrado = String.format("En el archivo de Excel, la cantidad de teléfonos que no corresponden"
-                + " a ninguna provincia del ecuador son : %d", contadorEProvincia);
+                + " a ninguna provincia del Ecuador son : %d ", contadorEProvincia);
         return errorEncontrado;
     }
 
-    private String contarEspaciosBlancos(List<String> telefonoEstudiante2) {
+    private int contarEspaciosBlancos(List<String> telefonoEstudiante2) {
         int contadorEspacios = 0;
-        for (String telefono : telefonoEstudiante2) {
-            if (telefono.equals("")) {
+        for (String registro : telefonoEstudiante2) {
+            if (registro.equals("")) {
                 contadorEspacios++;
             }
         }
-        String errorEncontrado = String.format("En el archivo de Excel, en los teléfonos correspodientes"
-                + " a los estudiantes se encontraron %d registros en blanco", contadorEspacios);
-        return errorEncontrado;
+        return contadorEspacios;
     }
 
 }
